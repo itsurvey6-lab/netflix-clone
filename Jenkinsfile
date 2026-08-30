@@ -1,4 +1,7 @@
 pipeline {
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '2'))
+    }
     agent any
 
     environment {
@@ -80,8 +83,8 @@ pipeline {
                     credentialsId: 'Docker-hub',
                     url: 'https://index.docker.io/v1/'
                 ) {
-                    sh 'docker tag netflix itsurvey6/netflix:latest'
-                    sh 'docker push itsurvey6/netflix:latest'
+                    sh 'docker tag netflix itsurvey6/netflix:${BUILD_NUMBER}'
+                    sh 'docker push itsurvey6/netflix:${BUILD_NUMBER}'
                 }
             }
         }
