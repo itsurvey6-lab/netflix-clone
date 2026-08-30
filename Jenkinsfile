@@ -59,7 +59,7 @@ pipeline {
 
         stage('docker build') {
             steps {
-                sh 'docker build --build-arg API_KEY=YOUR_KEY -t netflix ./netflix'
+                sh 'docker build --build-arg API_KEY=YOUR_KEY -t netflix ./nextflix'
             }
         }
 
