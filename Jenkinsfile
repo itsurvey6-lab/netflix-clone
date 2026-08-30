@@ -78,8 +78,7 @@ pipeline {
             steps {
                 withDockerRegistry(
                     credentialsId: 'Docker-hub',
-                    toolName: 'docker',
-                    url: 'registry-1.docker.io'
+                    url: 'https://index.docker.io/v1/'
                 ) {
                     sh 'docker tag netflix itsurvey6/netflix:latest'
                     sh 'docker push itsurvey6/netflix:latest'
