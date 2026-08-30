@@ -88,5 +88,19 @@ pipeline {
                 }
             }
         }
+        stage('Update Deployment') {
+            steps {
+                sh '''
+                    sed -i "s|image: itsurvey6/netflix:.*|image: itsurvey6/netflix:${BUILD_NUMBER}|" k8s/deployment.yml
+
+                    git config user.email "itsurvey6@gmail.com"
+                    git config user.name "itsurvey6-lab"
+
+                    git add k8s/deployment.yml
+                    git commit -m "Update image to ${BUILD_NUMBER}" || true
+                    git push origin main
+                '''
+            }
+        }
     }
 }
