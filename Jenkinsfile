@@ -1,7 +1,12 @@
 pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '2'))
+        disableConcurrentBuilds()
     }
+    triggers {
+        githubPush()
+    }
+
     agent any
 
     environment {
@@ -63,7 +68,16 @@ pipeline {
 
         stage('docker build') {
             steps {
-                sh 'docker build --build-arg API_KEY=YOUR_KEY -t netflix ./nextflix'
+                withCredentials([string(
+                    credentialsId: 'tmdb-api-key',
+                    variable: 'TMDB_API_KEY'
+                )]) {
+                    sh '''
+                        docker build \
+                        --build-arg API_KEY="$TMDB_API_KEY" \
+                        -t netflix ./nextflix
+                    '''
+                }
             }
         }
 
@@ -106,7 +120,7 @@ pipeline {
                         git config user.name "itsurvey6-lab"
 
                         git add k8s/deployment.yml
-                        git commit -m "Update image to ${BUILD_NUMBER}" || true
+                        git commit -m "Update image to ${BUILD_NUMBER} [skip ci]" || true
                         git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/itsurvey6-lab/netflix-clone.git HEAD:main
                     '''
                 }    
