@@ -67,7 +67,7 @@ Stop Jenkins:
 
 
 
-sudo systemctl stop jenkins
+sudo systemctl stop jen
 
 
 
