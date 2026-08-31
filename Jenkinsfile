@@ -97,7 +97,7 @@ pipeline {
                     passwordVariable: 'GIT_TOKEN'
                 )]) {
                     sh '''
-                        sed -i "s|image: itsurvey6/netflix:.*|image: itsurvey6/netflix:${BUILD_NUMBER}|" k8s/deployment.yml
+                        sed -i "s|itsurvey6/netflix:.*|itsurvey6/netflix:${BUILD_NUMBER}|" k8s/deployment.yml
 
                         echo "IMAGE:"
                         grep "image:" k8s/deployment.yml
