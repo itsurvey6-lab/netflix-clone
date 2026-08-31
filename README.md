@@ -1,47 +1,4 @@
-\# CI Phase – Jenkins Setup \& GitHub Webhook
-
-
-
 This document covers the CI (Continuous Integration) phase of the Netflix Clone DevSecOps project.
-
-
-
-\## CI Architecture
-
-
-The CI flow is:
-
-GitHub
-
-
-&#x20;  ↓
-
-GitHub Webhook
-
-&#x20;  ↓
-
-ngrok
-
-&#x20;  ↓
-
-Jenkins
-
-&#x20;  ↓
-
-Docker Build
-
-&#x20;  ↓
-
-Docker Hub
-
-
-
-The deployment/CD phase is handled separately by Argo CD.
-
-
-
-\---
-
 
 
 \# 1. Jenkins Server
@@ -50,363 +7,81 @@ The deployment/CD phase is handled separately by Argo CD.
 
 Jenkins is installed on the CI server and runs on port `8080`.
 
-
-
-Check Jenkins status:
-
-
-Start Jenkins:
-
-
-
 sudo systemctl start jenkins
-
-
-
-Stop Jenkins:
-
-
-
-sudo systemctl stop jen
-
-
-
-Restart Jenkins:
-
-
-
 sudo systemctl restart jenkins
 
-
-
 Reset a failed Jenkins service:
-
-
-
 sudo systemctl reset-failed jenkins
 
-
-
 Check whether port 8080 is being used:
-
-
-
 sudo ss -tulnp | grep 8080
 
 2\. Jenkins Configuration File
 
-
-
 Jenkins configuration is stored at:
-
-
-
 /var/lib/jenkins/config.xml
 
-
-
 Before modifying the configuration, create a backup:
-
-
-
 sudo cp /var/lib/jenkins/config.xml /var/lib/jenkins/config.xml.backup
 
 
-
 View the configuration:
-
-
-
 sudo cat /var/lib/jenkins/config.xml
 
 Important
-
-
-
 Do not edit config.xml unnecessarily.
-
-
-
-A small XML mistake can prevent Jenkins from starting.
-
-
-
-For example, an accidental string before the XML declaration:
-
-
-
-trueifali<?xml version='1.1' encoding='UTF-8'?>
-
-
-
-makes the configuration invalid.
-
-
-
-The file should start with:
-
-
-
-<?xml version='1.1' encoding='UTF-8'?>
-
-<hudson>
 
 3\. Jenkins Troubleshooting
 
-
-
 If Jenkins fails to start:
-
-
-
 sudo systemctl status jenkins --no-pager -l
 
-
-
 Check Jenkins logs:
-
-
-
 sudo journalctl -u jenkins --no-pager -n 50
 
-
-
 If the configuration was recently modified, restore the backup:
-
-
-
 sudo systemctl stop jenkins
 
-
-
-sudo cp /var/lib/jenkins/config.xml.backup \\
-
-/var/lib/jenkins/config.xml
-
-
-
+sudo cp /var/lib/jenkins/config.xml.backup /var/lib/jenkins/config.xml
 sudo systemctl reset-failed jenkins
-
-
-
 sudo systemctl start jenkins
 
-
-
 Verify:
-
-
-
 sudo systemctl status jenkins --no-pager
 
 
-
-Expected:
-
-
-
-Active: active (running)
-
 4\. Validate Jenkins XML Configuration
-
-
-
 Install XML validation tools:
-
-
-
 sudo apt install -y libxml2-utils
 
-
-
 Validate the Jenkins configuration:
-
-
-
 sudo xmllint --noout /var/lib/jenkins/config.xml
 
 
-
-Note:
-
-
-
-Jenkins may use XML version 1.1. xmllint can display a warning such as:
-
-
-
-Unsupported version '1.1'
-
-
-
-This does not necessarily mean the Jenkins configuration is broken.
-
-
-
-5\. Running Jenkins Manually for Troubleshooting
-
-
-
-If systemd cannot start Jenkins, it can be useful to run Jenkins directly to see the actual application error:
-
-
-
-sudo systemctl stop jenkins
-
-sudo -u jenkins /usr/bin/jenkins
-
-
-
-If Jenkins starts successfully, you should see:
-
-
-
-Jenkins is fully up and running
-
-
-
-Stop the manually running Jenkins with:
-
-
-
-Ctrl + C
-
-
-
-Then start it normally:
-
-
-
-sudo systemctl start jenkins
-
 6\. Jenkins Users
 
-
-
 Jenkins local users are stored under:
-
-
-
 /var/lib/jenkins/users/
 
-
-
 List Jenkins users:
-
-
-
 sudo ls -la /var/lib/jenkins/users/
-
-
-
 Find user configuration files:
 
 
-
-sudo find /var/lib/jenkins/users -maxdepth 2 -name config.xml -print
-
-
-
-The Jenkins username must match an existing Jenkins user.
-
-
-
-Do not assume that the username is always:
-
-
-
-admin
-
 7\. Jenkins Web Access Using ngrok
-
-
-
 Because Jenkins is running on:
-
-
-
 localhost:8080
 
-
-
 ngrok can expose Jenkins to GitHub.
-
-
-
 Start ngrok:
-
-
-
 sudo ngrok http 8080
 
-
-
 ngrok will provide a public HTTPS address similar to:
-
-
-
 https://example.ngrok-free.dev
 
 
-
-Open this address in a browser to access Jenkins.
-
-
-
-8\. Run ngrok in Background
-
-
-
-To run ngrok without keeping the terminal attached:
-
-
-
-nohup ngrok http 8080 > /tmp/ngrok.log 2>\&1 \&
-
-
-
-Check whether ngrok is running:
-
-
-
-ps aux | grep ngrok
-
-
-
-Check ngrok logs:
-
-
-
-cat /tmp/ngrok.log
-
-
-
-ngrok's local API can be checked with:
-
-
-
-curl http://127.0.0.1:4040/api/tunnels
-
-Important
-
-
-
-The free ngrok URL can change when ngrok is restarted.
-
-
-
-If the URL changes, the GitHub webhook must be updated.
-
-
-
 9\. GitHub Webhook
-
-
-
 Go to:
-
-
-
 GitHub Repository
 
 → Settings
@@ -415,133 +90,40 @@ GitHub Repository
 
 → Add webhook
 
-
-
 Use:
-
-
 
 Payload URL:
 
 https://<NGROK-URL>/github-webhook/
 
-
-
-Example:
-
-
-
-https://example.ngrok-free.dev/github-webhook/
-
-
-
-Set:
-
-
-
 Content type:
-
 application/json
-
-
-
-For the initial setup, select:
-
-
-
-Just the push event
-
-
-
-Enable:
-
-
-
-Active
-
-
-
-Then click:
-
-
-
 Add webhook
 
 10\. Git Branch Workflow
 
-
-
 The project uses a feature branch and main branch.
-
-
 
 Example:
 
-
-
 git checkout feature
-
-
-
 Make changes and check status:
-
-
-
 git status
-
-
-
 Add files:
-
-
-
-git add .
-
-
-
 Commit:
-
-
-
 git commit -m "update configuration"
 
-
-
 Push the feature branch:
-
-
-
 git push origin feature
-
-
-
-Then create a Pull Request from:
-
-
-
-feature → main
-
-
-
-After the Pull Request is merged, main receives a push event.
-
 
 
 That push can trigger Jenkins.
 
 
-
 11\. Jenkins Pipeline Trigger
-
-
-
 Create a Jenkins Pipeline job.
 
-
-
 Recommended configuration:
-
-
 
 New Item
 
@@ -550,700 +132,342 @@ New Item
 → Pipeline
 
 
-
 Under:
-
-
-
 Build Triggers
-
-
-
 enable:
-
-
-
 GitHub hook trigger for GITScm polling
-
-
-
 The GitHub webhook will then notify Jenkins when a push occurs.
 
 
 
 12\. Pipeline From GitHub
 
-
-
 Recommended Jenkins Pipeline configuration:
-
-
 
 Definition:
 
 Pipeline script from SCM
-
-
-
 SCM:
-
-
-
 Git
-
-
-
 Repository:
-
-
-
 https://github.com/itsurvey6-lab/netflix-clone.git
-
-
-
 Branch:
-
-
-
-\*/main
-
-
-
+\*/feature
 Script Path:
-
-
-
 Jenkinsfile
 
-
-
 The Jenkinsfile should be stored in the project repository.
+# Netflix Clone — DevSecOps CI/CD
 
+A Netflix Clone application deployed on Kubernetes using Jenkins CI, Docker Hub, Trivy, SonarQube, Dependency-Check and Argo CD.
 
-
-13\. CI Pipeline
-
-
-
-The planned CI pipeline is:
-
-
+## Architecture
 
 Developer
-
-&#x20;   ↓
-
-Feature Branch
-
-&#x20;   ↓
-
-Pull Request
-
-&#x20;   ↓
-
-main
-
-&#x20;   ↓
-
+   ↓
+GitHub Feature Branch
+   ↓
 GitHub Webhook
+   ↓
+Jenkins CI
+   ├── SonarQube
+   ├── Dependency Check
+   ├── Trivy FS Scan
+   ├── Docker Build
+   ├── Trivy Image Scan
+   └── Docker Hub
+          ↓
+    netflix:BUILD_NUMBER
+          ↓
+   Pull Request
+   feature → main
+          ↓
+       Argo CD
+          ↓
+     Kubernetes
+          ↓
+     Netflix App
 
-&#x20;   ↓
 
+## Technologies
+
+- Next.js
+- Docker
+- Jenkins
+- GitHub
+- Docker Hub
+- SonarQube
+- Trivy
+- OWASP Dependency-Check
+- Kubernetes
+- Argo CD
+- AWS EKS
+
+
+## Git Branch Strategy
+
+- `feature` → development and CI
+- `main` → approved/production configuration
+
+Workflow:
+
+```text
+feature → Jenkins CI → Docker Hub → PR → main → Argo CD → Kubernetes
+Docker
+
+Dockerfile uses the TMDB API key during image build:
+
+ARG API_KEY
+ENV TMDB_KEY=${API_KEY}
+
+Build manually:
+
+docker build --build-arg API_KEY=YOUR_KEY -t netflix ./nextflix
+
+Run:
+
+docker run -p 3000:3000 netflix
 Jenkins
 
-&#x20;   ↓
-
-Checkout
-
-&#x20;   ↓
-
-Build Docker Image
-
-&#x20;   ↓
-
-Push Docker Image to Docker Hub
-
-&#x20;   ↓
-
-Update Deployment
-
-
-
-Argo CD handles the Kubernetes deployment/CD portion.
-
-
-
-14\. Docker Image
-
-
-
-The application Docker image is:
-
-
-
-itsurvey6/netflix
-
-
-
-The Docker image can be built using:
-
-
-
-docker build -t itsurvey6/netflix:latest .
-
-
-
-Check images:
-
-
-
-docker images
-
-
-
-Login to Docker Hub:
-
-
-
-docker login
-
-
-
-Push the image:
-
-
-
-docker push itsurvey6/netflix:latest
-
-
-
-Never put a Docker Hub password or access token directly inside the Jenkinsfile.
-
-
-
-Use Jenkins Credentials instead.
-
-
-
-15\. Kubernetes Deployment
-
-
-
-The Kubernetes manifests are located in:
-
-
-
-k8s/
-
-
-
-Current files:
-
-
-
-k8s/
-
-├── deployment.yml
-
-└── service.yml
-
-
-
-Deployment:
-
-
-
-apiVersion: apps/v1
-
-kind: Deployment
-
-
-
-Service:
-
-
-
-apiVersion: v1
-
-kind: Service
-
-
-
-The application runs on container port:
-
-
-
-3000
-
-
-
-The service uses:
-
-
-
-targetPort: 3000
-
-
-
-and is configured as:
-
-
-
-type: LoadBalancer
-
-16\. Argo CD
-
-
-
-Argo CD watches the GitHub repository:
-
-
-
-https://github.com/itsurvey6-lab/netflix-clone.git
-
-
-
-Path:
-
-
-
-k8s
-
-
-
-Destination:
-
-
-
-in-cluster
-
-
-
-Namespace:
-
-
-
-netflix
-
-
-
-The Argo CD application is:
-
-
-
-netflix-clone
-
-
-
-Check Argo CD application:
-
-
-
-kubectl get applications -n argocd
-
-
+Jenkins performs:
+
+Checkout feature
+SonarQube analysis
+Dependency Check
+Trivy filesystem scan
+Docker build
+Trivy image scan
+Push image to Docker Hub
+
+Image format:
+
+itsurvey6/netflix:<BUILD_NUMBER>
 
 Example:
 
+itsurvey6/netflix:23
+Jenkins Credentials
 
+Configured credentials:
 
-NAME            SYNC STATUS   HEALTH STATUS
+github-push
+Docker-hub
+tmdb-api-key
+nvd-api-key
 
-netflix-clone   Synced        Healthy
+TMDB key is injected securely:
 
-17\. Kubernetes Verification
+withCredentials([string(
+    credentialsId: 'tmdb-api-key',
+    variable: 'TMDB_API_KEY'
+)]) {
+    sh '''
+        docker build \
+        --build-arg API_KEY="$TMDB_API_KEY" \
+        -t netflix ./nextflix
+    '''
+}
+Docker Hub
 
+Login/push is handled by Jenkins:
 
+withDockerRegistry(
+    credentialsId: 'Docker-hub',
+    url: 'https://index.docker.io/v1/'
+)
 
-Check the application namespace:
+Image:
 
+itsurvey6/netflix:BUILD_NUMBER
+Kubernetes
 
+Deployment:
 
-kubectl get all -n netflix
-
-
+image: itsurvey6/netflix:23
 
 Check deployment:
 
-
-
 kubectl get deployment -n netflix
-
-
 
 Check pods:
 
-
-
 kubectl get pods -n netflix
 
+Check image:
 
+kubectl get deployment netflix-app -n netflix \
+-o jsonpath='{.spec.template.spec.containers[0].image}'; echo
 
-Check ReplicaSets:
+Check logs:
 
+kubectl logs -n netflix deployment/netflix-app --tail=100
+Argo CD
 
+Argo CD watches the main branch and synchronizes Kubernetes manifests.
 
-kubectl get rs -n netflix
+Flow:
 
+PR feature → main
+      ↓
+Argo CD detects change
+      ↓
+Sync
+      ↓
+Kubernetes
+Important Git Commands
 
+Check branch:
 
-Check service:
+git branch --show-current
 
+Check status:
 
+git status
 
-kubectl get svc -n netflix
+Switch branch:
 
+git checkout feature
+git checkout main
 
+Update branch:
 
-Expected deployment:
+git pull origin feature
+git pull origin main
 
+Commit:
 
+git add .
+git commit -m "message"
 
-netflix-app
+Push:
 
+git push origin feature
+git push origin main
 
+View history:
 
-Expected replicas:
+git log --oneline --decorate -5
+Git Merge Conflict
 
+If Git reports:
 
+CONFLICT (content): Merge conflict in k8s/deployment.yml
 
-2/2
+Open the file and remove:
 
-18\. Argo CD Troubleshooting
 
+Keep the correct Docker image, for example:
 
+image: itsurvey6/netflix:23
 
-Check the application:
+Then:
 
+git add k8s/deployment.yml
+git commit -m "Resolve deployment conflict"
+git push origin feature
+Common Problems
+Jenkins not triggered
 
+Check:
 
-kubectl get applications -n argocd
+GitHub webhook URL
+GitHub webhook Recent Deliveries
+Jenkins GitHub hook trigger for GITScm polling
+Jenkins branch:
+*/feature
+Repository URL and credentials
+Jenkins triggers itself repeatedly
 
+This happened because Jenkins updated deployment.yml and pushed back to the same branch.
 
+Bad flow:
 
-Detailed information:
+Jenkins
+ ↓
+update deployment.yml
+ ↓
+push feature
+ ↓
+GitHub webhook
+ ↓
+Jenkins again
 
+For a clean production design, separate application CI from GitOps configuration, preferably using a separate GitOps repository.
 
+Git push rejected
 
-kubectl describe application netflix-clone -n argocd
+If:
 
+! [rejected] main -> main (fetch first)
 
+Use:
 
-If the application reports:
+git pull --rebase origin main
+git push origin main
 
+Do not use force push unless you specifically understand the consequences.
 
+Docker image not updating
 
-namespaces "netflix" not found
+Check Docker Hub:
 
+docker pull itsurvey6/netflix:23
 
+Check Kubernetes:
 
-create the namespace:
+kubectl get deployment netflix-app -n netflix \
+-o jsonpath='{.spec.template.spec.containers[0].image}'; echo
+curl not found inside container
 
+If:
 
+exec: "curl": executable file not found
 
-kubectl create namespace netflix
+The container image doesn't contain curl.
 
+Use Kubernetes networking/debug tools instead of installing packages into the production container.
 
+Application API returns Error
 
-Then sync the Argo CD application again.
+Check:
 
+kubectl logs -n netflix deployment/netflix-app --tail=100
 
+Verify the TMDB API key was supplied during Docker build:
 
-19\. Important Kubernetes Lesson
+--build-arg API_KEY="$TMDB_API_KEY"
 
+Also verify the Docker image being deployed is the expected build number.
 
-
-The following are different concepts:
-
-
-
-netflix-clone
-
-
-
-is the Argo CD Application name.
-
-
-
-netflix-app
-
-
-
-is the Kubernetes Deployment/Service application name.
-
-
-
-netflix
-
-
-
-is the Kubernetes namespace.
-
-
-
-They are not the same thing.
-
-
-
-The relationship is:
-
-
-
-Argo CD Application
-
-&#x20;       |
-
-&#x20;       | deploys
-
-&#x20;       ↓
-
-Kubernetes namespace: netflix
-
-&#x20;       |
-
-&#x20;       ├── Deployment: netflix-app
-
-&#x20;       |
-
-&#x20;       ├── Pods: netflix-app-xxxxx
-
-&#x20;       |
-
-&#x20;       └── Service: netflix-app
-
-20\. Final CI/CD Architecture
-
-
-
-The completed project follows:
-
-
-
-&#x20;                   GitHub
-
-&#x20;                      |
-
-&#x20;                      |
-
-&#x20;                Feature Branch
-
-&#x20;                      |
-
-&#x20;                      ↓
-
-&#x20;                Pull Request
-
-&#x20;                      |
-
-&#x20;                      ↓
-
-&#x20;                    main
-
-&#x20;                      |
-
-&#x20;                      ↓
-
-&#x20;                 Webhook
-
-&#x20;                      |
-
-&#x20;                      ↓
-
-&#x20;                   ngrok
-
-&#x20;                      |
-
-&#x20;                      ↓
-
-&#x20;                  Jenkins
-
-&#x20;                      |
-
-&#x20;             ┌────────┴────────┐
-
-&#x20;             ↓                 ↓
-
-&#x20;         Build Image       Test/Scan
-
-&#x20;             |
-
-&#x20;             ↓
-
-&#x20;         Docker Hub
-
-&#x20;             |
-
-&#x20;             ↓
-
-&#x20;       Kubernetes Manifest
-
-&#x20;             |
-
-&#x20;             ↓
-
-&#x20;           Argo CD
-
-&#x20;             |
-
-&#x20;             ↓
-
-&#x20;       Kubernetes Cluster
-
-&#x20;             |
-
-&#x20;             ↓
-
-&#x20;       Netflix Application
-
-Troubleshooting Summary
-
-Jenkins does not start
-
-sudo systemctl status jenkins --no-pager -l
-
-sudo journalctl -u jenkins --no-pager -n 50
-
-Jenkins configuration was accidentally modified
-
-
-
-Restore backup:
-
-
-
-sudo systemctl stop jenkins
-
-sudo cp /var/lib/jenkins/config.xml.backup /var/lib/jenkins/config.xml
-
-sudo systemctl reset-failed jenkins
-
-sudo systemctl start jenkins
-
-Check Jenkins is running
-
-sudo systemctl status jenkins
-
-
-
-Expected:
-
-
-
-Active: active (running)
-
-Check Jenkins port
-
-sudo ss -tulnp | grep 8080
-
-Check ngrok
-
-ps aux | grep ngrok
-
-curl http://127.0.0.1:4040/api/tunnels
-
-Check GitHub webhook
-
-
-
-GitHub:
-
-
-
-Repository
-
-→ Settings
-
-→ Webhooks
-
-→ Recent Deliveries
-
-
-
-Look for a successful delivery.
-
-
-
-Check Argo CD
-
-kubectl get applications -n argocd
-
-Check Kubernetes application
-
-kubectl get all -n netflix
-
-Security Notes
-
-
-
-Do not commit any of the following to GitHub:
-
-
-
-Jenkins passwords
-
-Docker Hub passwords
-
-Docker Hub access tokens
-
-GitHub tokens
-
-Kubernetes secrets
-
-ngrok authentication tokens
-
-
-
-Use Jenkins Credentials or another secret-management mechanism instead.
-
-
-
-Current Status
-
-
-
-The following components have been completed:
-
-
-
-&#x20;Kubernetes cluster
-
-&#x20;Prometheus
-
-&#x20;Grafana
-
-&#x20;Argo CD
-
-&#x20;Netflix Kubernetes Deployment
-
-&#x20;Netflix Kubernetes Service
-
-&#x20;Argo CD application
-
-&#x20;GitHub repository
-
-&#x20;Jenkins
-
-&#x20;ngrok
-
-&#x20;GitHub webhook setup
-
-
-
-Next CI automation tasks:
-
-
-
-&#x20;Create Jenkinsfile
-
-&#x20;Configure Jenkins Pipeline
-
-&#x20;Add Docker Hub credentials to Jenkins
-
-&#x20;Build Docker image automatically
-
-&#x20;Push image to Docker Hub
-
-&#x20;Connect CI changes with Argo CD deployment
-
-&#x20;Test complete GitHub → Jenkins → Docker Hub → Argo CD → Kubernetes workflow
-
+Final CI/CD Flow
+Developer
+   ↓
+git push feature
+   ↓
+GitHub Webhook
+   ↓
+Jenkins
+   ↓
+SonarQube
+   ↓
+Dependency Check
+   ↓
+Trivy
+   ↓
+Docker Build
+   ↓
+Trivy Image Scan
+   ↓
+Docker Hub
+   ↓
+itsurvey6/netflix:BUILD_NUMBER
+   ↓
+Pull Request
+   ↓
+feature → main
+   ↓
+Argo CD
+   ↓
+Kubernetes / EKS
+   ↓
+Netflix Application
