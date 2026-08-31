@@ -9,10 +9,7 @@ This document covers the CI (Continuous Integration) phase of the Netflix Clone 
 \## CI Architecture
 
 
-
 The CI flow is:
-
-
 
 GitHub
 
