@@ -3,9 +3,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '2'))
         disableConcurrentBuilds()
     }
-    triggers {
-        githubPush()
-    }
 
     agent any
 
@@ -23,7 +20,7 @@ pipeline {
 
         stage('checkout github') {
             steps {
-                git branch: 'main',
+                git branch: 'feature',
                     credentialsId: 'github-push',
                     url: 'https://github.com/itsurvey6-lab/netflix-clone.git'
             }
@@ -120,8 +117,8 @@ pipeline {
                         git config user.name "itsurvey6-lab"
 
                         git add k8s/deployment.yml
-                        git commit -m "Update image to ${BUILD_NUMBER} [skip ci]" || true
-                        git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/itsurvey6-lab/netflix-clone.git HEAD:main
+                        git commit -m "Update image to ${BUILD_NUMBER}" || true
+                        git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/itsurvey6-lab/netflix-clone.git HEAD:feature
                     '''
                 }    
             }
