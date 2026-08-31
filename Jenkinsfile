@@ -19,6 +19,7 @@ pipeline {
         stage('checkout github') {
             steps {
                 git branch: 'main',
+                    credentialsId: 'github-push',
                     url: 'https://github.com/itsurvey6-lab/netflix-clone.git'
             }
         }
