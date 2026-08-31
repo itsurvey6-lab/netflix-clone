@@ -55,13 +55,6 @@ Jenkins is installed on the CI server and runs on port `8080`.
 Check Jenkins status:
 
 
-
-```bash
-
-sudo systemctl status jenkins
-
-
-
 Start Jenkins:
 
 
