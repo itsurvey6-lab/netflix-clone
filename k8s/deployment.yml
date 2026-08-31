@@ -19,7 +19,7 @@ spec:
 
     spec:
       containers:
-        - image:  itsurvey6/netflix:23
+        - image:  itsurvey6/netflix:24
           name: netflix-app
           ports:
           - name:  http
